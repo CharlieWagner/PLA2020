@@ -67,33 +67,35 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        
+        VRRigRecenter();
+
         if (isGrounded())
         {
-            AccelerateTowards(BaseVelocityTarget(_GroundSpeed) + (_headVelocity * 2));
+            
+
+            /*AccelerateTowards(BaseVelocityTarget(_GroundSpeed) + (_headVelocity * 2));
 
             
             if (_Jump.stateDown)
             {
                 _PlayerRB.AddForce(new Vector3(0, _JumpAcceleration, 0));
-            }
+            }*/
         }
         else
         {
-            float dotVectors;
+            /*float dotVectors;
             dotVectors = Vector3.Dot(BaseVelocityTarget(_AirControl).normalized, new Vector3(_PlayerRB.velocity.x, 0, _PlayerRB.velocity.z).normalized);
             dotVectors = -dotVectors + 1;
             dotVectors = Mathf.Clamp(dotVectors, 0, 1);
-            _PlayerRB.AddForce(BaseVelocityTarget(_AirControl) * dotVectors);
+            _PlayerRB.AddForce(BaseVelocityTarget(_AirControl) * dotVectors);*/
         }
 
         FovReduce(10,.5f, .5f);
-        CrouchMove();
         ClampVelocity();
         SnapTurn(45);
         
     }
-
+    /*
     public Vector3 BaseVelocityTarget(float Speed) // Base X & Z axis velocity target
     {
         float yRotation = _VRCam.transform.eulerAngles.y;
@@ -112,7 +114,7 @@ public class PlayerController : MonoBehaviour
         Acceleration = Target - XZVelocity;
         _PlayerRB.AddForce(Acceleration.normalized * Mathf.Clamp(Acceleration.magnitude, 0, _MaxAcceleration));
     }
-
+    */
     public bool isGrounded()
     {
         RaycastHit Hit;
@@ -142,13 +144,14 @@ public class PlayerController : MonoBehaviour
         _headVelocity = Quaternion.AngleAxis(transform.rotation.eulerAngles.y, Vector3.up) * _headVelocity;
 
         //Debug.DrawLine(transform.position + Vector3.up*.05f, transform.position + _headVelocity + Vector3.up * .05f);
-        
-        
+
+
         //Debug.DrawLine(transform.position, transform.position + _headVelocity*60);
-        //Debug.Log(_headVelocity.magnitude);
+        Debug.Log(_headVelocity.magnitude);
 
         //_PlayerRB.velocity = _headVelocity;
-        
+        _PlayerRB.velocity = _headVelocity;
+
     }
 
     public void ClampVelocity()
@@ -164,17 +167,5 @@ public class PlayerController : MonoBehaviour
         _LastVelocity = _PlayerRB.velocity;
         targetValue = Mathf.Clamp(_CurrentAcceleration.magnitude * strength, 0, maxFovPercent);
         _FovConeMat.SetFloat("_Ctrl", Mathf.Lerp(_FovConeMat.GetFloat("_Ctrl"), targetValue, Time.deltaTime * lerpSpeed));
-    }
-
-    public void CrouchMove()
-    {
-        if (_Crouch.state)
-        {
-            _SteamVRRig.transform.position = transform.position - Vector3.up * 1.5f;
-        } else
-        {
-            _SteamVRRig.transform.position = transform.position - Vector3.up * .75f;
-        }
-        VRRigRecenter();
     }
 }
