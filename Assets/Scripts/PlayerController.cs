@@ -17,6 +17,7 @@ public class PlayerController : MonoBehaviour
     private float _AirControl;
 
     private float _distToGround;
+    private float _distToCapsuleCenter;
     private float _distToSide;
 
     public float _MaxVelocity;
@@ -38,6 +39,9 @@ public class PlayerController : MonoBehaviour
 
     private Vector3 _headVelocity;
 
+    [SerializeField]
+    private float _MoveDeadzone;
+
 
     [Header("VR Input")]
     [SerializeField]
@@ -56,32 +60,36 @@ public class PlayerController : MonoBehaviour
     private GameObject _VRCam;
     [SerializeField]
     private Transform _HeadPosition;
-    
 
-    private 
 
-    void Start()
+    [Header("Debug UI")]
+
+    [SerializeField]
+    private Transform _Stick;
+
+    private void Start()
     {
         _distToGround = GetComponent<Collider>().bounds.extents.y;
+        _distToCapsuleCenter = GetComponent<Collider>().bounds.center.y;
         _distToSide = GetComponent<Collider>().bounds.extents.x;
         _FovConeMat = _FovCone.GetComponent<Renderer>().material;
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
         VRRigRecenter();
 
+        UpdateStickUI();
+
         if (isGrounded())
         {
-            AccelerateTowards(/*BaseVelocityTarget(_GroundSpeed) + */(_headVelocity));
-
-            /*AccelerateTowards(BaseVelocityTarget(_GroundSpeed) + (_headVelocity * 2));
+            AccelerateTowards(BaseVelocityTarget(_GroundSpeed) + _headVelocity);
 
             
             if (_Jump.stateDown)
             {
                 _PlayerRB.AddForce(new Vector3(0, _JumpAcceleration, 0));
-            }*/
+            }
         }
         else
         {
@@ -93,37 +101,43 @@ public class PlayerController : MonoBehaviour
         }
 
         FovReduce(10,.5f, .5f);
-        ClampVelocity();
+        //ClampVelocity();
         SnapTurn(45);
         
     }
-    /*
-    public Vector3 BaseVelocityTarget(float Speed) // Base X & Z axis velocity target
+
+    private Vector3 BaseVelocityTarget(float Speed) // Base X & Z axis velocity target
     {
         float yRotation = _VRCam.transform.eulerAngles.y;
         Quaternion Forwards = Quaternion.Euler(0,yRotation,0);
-        return (Forwards * new Vector3(_Move.axis.x, 0, _Move.axis.y) * Speed);
+
+        if (_Move.axis.magnitude >= _MoveDeadzone)
+            return (Forwards * new Vector3(_Move.axis.x, 0, _Move.axis.y) * Speed);
+        else 
+            return (Vector3.zero);
     }
 
-    public void AccelerateTowards(Vector3 Target)
+    private void AccelerateTowards(Vector3 Target)
     {
         Vector3 Acceleration;
         Vector3 XZVelocity;
         XZVelocity = _PlayerRB.velocity - new Vector3(0, _PlayerRB.velocity.y, 0);
 
-        XZVelocity -= _headVelocity;
+        //XZVelocity -= _headVelocity;
         
         Acceleration = Target - XZVelocity;
         _PlayerRB.AddForce(Acceleration.normalized * Mathf.Clamp(Acceleration.magnitude, 0, _MaxAcceleration));
-    }
-    */
-    public bool isGrounded()
-    {
-        RaycastHit Hit;
-        return Physics.SphereCast(transform.position, _distToSide, -Vector3.up, out Hit, _distToGround + 0.01f);
+
+        //Debug.Log(Acceleration.magnitude);
     }
 
-    public void SnapTurn(float Angle)
+    private bool isGrounded()
+    {
+        RaycastHit Hit;
+        return Physics.SphereCast(transform.position /*- new Vector3(0,_distToCapsuleCenter,0)*/, _distToSide, -Vector3.up, out Hit, _distToGround + 0.01f);
+    }
+
+    private void SnapTurn(float Angle)
     {
         if (_SnapTurnLeft.stateDown)
         {
@@ -134,12 +148,12 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    public void VRRigRecenter()
+    private void VRRigRecenter()
     {
         _SteamVRRig.transform.localPosition = new Vector3(-_VRCam.transform.localPosition.x, _SteamVRRig.transform.localPosition.y, -_VRCam.transform.localPosition.z);
 
-        _headVelocity = (_VRCam.transform.localPosition - _lastHeadPos) / Time.deltaTime;
-        _lastHeadPos = _VRCam.transform.localPosition;
+        _headVelocity = ((_VRCam.transform.localPosition + _HeadPosition.localPosition) - _lastHeadPos) / Time.deltaTime;
+        _lastHeadPos = (_VRCam.transform.localPosition + _HeadPosition.localPosition);
         
         _headVelocity = new Vector3(_headVelocity.x, 0, _headVelocity.z);
 
@@ -149,19 +163,15 @@ public class PlayerController : MonoBehaviour
 
 
         //Debug.DrawLine(transform.position, transform.position + _headVelocity*60);
-        Debug.Log(_headVelocity.magnitude);
-
-        //_PlayerRB.velocity = _headVelocity;
-        _PlayerRB.velocity = _headVelocity;
-
+        //Debug.Log(_headVelocity.magnitude);
     }
 
-    public void ClampVelocity()
+    private void ClampVelocity()
     {
         _PlayerRB.velocity = _PlayerRB.velocity.normalized * Mathf.Clamp(_PlayerRB.velocity.magnitude, 0, _MaxVelocity);
     }
 
-    public void FovReduce(float strength, float maxFovPercent, float lerpSpeed)
+    private void FovReduce(float strength, float maxFovPercent, float lerpSpeed)
     {
         float targetValue;
 
@@ -169,5 +179,11 @@ public class PlayerController : MonoBehaviour
         _LastVelocity = _PlayerRB.velocity;
         targetValue = Mathf.Clamp(_CurrentAcceleration.magnitude * strength, 0, maxFovPercent);
         _FovConeMat.SetFloat("_Ctrl", Mathf.Lerp(_FovConeMat.GetFloat("_Ctrl"), targetValue, Time.deltaTime * lerpSpeed));
+    }
+
+
+    private void UpdateStickUI()
+    {
+        _Stick.transform.localPosition = new Vector3(_Move.axis.x * 30, _Move.axis.y * 30, -.5f);
     }
 }
