@@ -54,6 +54,8 @@ public class PlayerController : MonoBehaviour
     private SteamVR_Action_Boolean _Crouch;
     [SerializeField]
     private GameObject _VRCam;
+    [SerializeField]
+    private Transform _HeadPosition;
     
 
     private 
@@ -71,7 +73,7 @@ public class PlayerController : MonoBehaviour
 
         if (isGrounded())
         {
-            
+            AccelerateTowards(/*BaseVelocityTarget(_GroundSpeed) + */(_headVelocity));
 
             /*AccelerateTowards(BaseVelocityTarget(_GroundSpeed) + (_headVelocity * 2));
 
