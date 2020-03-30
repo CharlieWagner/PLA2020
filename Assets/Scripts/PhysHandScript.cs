@@ -6,29 +6,30 @@ public class PhysHandScript : MonoBehaviour
 {
 
     private FixedJoint _GrabJoint;
-    public HandScript _ParentHand;
+    [SerializeField]
+    private HandScript _ParentHand;
+    [SerializeField]
+    private LayerMask GrabMask;
+    [SerializeField]
+    private int side = 1;
 
-    public LayerMask GrabMask;
-    public int side = 1;
+    [SerializeField]
+    private Transform _ShootSpot;
+    [SerializeField]
+    private float _Range;
+
+    [SerializeField]
+    private LayerMask _DynamicObjectLayerMask;
+
+    [SerializeField]
+    private LayerMask _NotDynamicObject;
+
+    private bool _shooting;
 
     private void Start()
     {
         //_GrabJoint = GetComponent<FixedJoint>();
     }
-    /*
-    private void OnCollisionStay(Collision collision)
-    {
-        Debug.Log("Je touche");
-        if (_ParentHand._Grab.state)
-        {
-            Debug.Log("J'attrappe");
-            if (collision.gameObject.tag == "Dynamic")
-            {
-                Debug.Log("On est là");
-                _GrabJoint.connectedBody = collision.rigidbody;
-            }
-        }
-    }*/
 
     private void Update()
     {
@@ -51,5 +52,19 @@ public class PhysHandScript : MonoBehaviour
         {
             Destroy(_GrabJoint);
         }
+
+        RaycastHit _TargetInfo;
+        if (Physics.Raycast(_ShootSpot.position, _ShootSpot.forward, out _TargetInfo, _Range, _DynamicObjectLayerMask))
+        {
+            Debug.Log("Dynamic");
+        } else if (Physics.Raycast(_ShootSpot.position, _ShootSpot.forward, out _TargetInfo, _Range, _NotDynamicObject))
+        {
+            Debug.Log("Not Dynamic");
+        } else
+        {
+            Debug.Log("nothing");
+        }
+
+
     }
 }
