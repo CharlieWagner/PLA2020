@@ -24,6 +24,11 @@ public class PhysHandScript : MonoBehaviour
     [SerializeField]
     private LayerMask _NotDynamicObject;
 
+    [SerializeField]
+    private Animator _HandAnimator;
+    [SerializeField]
+    private Animator _ReticleAnimator;
+
     private bool _shooting;
 
     private void Start()
@@ -32,6 +37,35 @@ public class PhysHandScript : MonoBehaviour
     }
 
     private void Update()
+    {
+        TargetStatus();
+        Grab();
+    }
+
+    private void TargetStatus()
+    {
+        RaycastHit _TargetInfo;
+        if (Physics.Raycast(_ShootSpot.position, _ShootSpot.forward, out _TargetInfo, _Range, _DynamicObjectLayerMask))
+        {
+            //Debug.Log("Dynamic");
+            _ReticleAnimator.SetInteger("RangeStatus", 1);
+            _ReticleAnimator.SetBool("isObject", true);
+        }
+        else if (Physics.Raycast(_ShootSpot.position, _ShootSpot.forward, out _TargetInfo, _Range, _NotDynamicObject))
+        {
+            //Debug.Log("Not Dynamic");
+            _ReticleAnimator.SetInteger("RangeStatus", 1);
+            _ReticleAnimator.SetBool("isObject", false);
+        }
+        else
+        {
+            //Debug.Log("nothing");
+            _ReticleAnimator.SetInteger("RangeStatus", 0);
+            _ReticleAnimator.SetBool("isObject", false);
+        }
+    }
+
+    private void Grab()
     {
         if (_ParentHand._Grab.GetStateDown(_ParentHand._handType))
         {
@@ -44,27 +78,22 @@ public class PhysHandScript : MonoBehaviour
                     _GrabJoint = gameObject.AddComponent<FixedJoint>();
                 }
                 _GrabJoint.connectedBody = Grab.rigidbody;
+                _HandAnimator.SetInteger("GrabType", 1);
             }
+            else
+            {
+                _HandAnimator.SetInteger("GrabType", 0);
+            }
+            _HandAnimator.SetBool("Grabbing", true);
+
+
             Debug.DrawRay(transform.position, side * transform.right, Color.red);
         }
 
         if (_ParentHand._Grab.GetStateUp(_ParentHand._handType))
         {
+            _HandAnimator.SetBool("Grabbing", false);
             Destroy(_GrabJoint);
         }
-
-        RaycastHit _TargetInfo;
-        if (Physics.Raycast(_ShootSpot.position, _ShootSpot.forward, out _TargetInfo, _Range, _DynamicObjectLayerMask))
-        {
-            Debug.Log("Dynamic");
-        } else if (Physics.Raycast(_ShootSpot.position, _ShootSpot.forward, out _TargetInfo, _Range, _NotDynamicObject))
-        {
-            Debug.Log("Not Dynamic");
-        } else
-        {
-            Debug.Log("nothing");
-        }
-
-
     }
 }
