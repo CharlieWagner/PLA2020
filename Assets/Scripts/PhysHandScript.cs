@@ -62,9 +62,10 @@ public class PhysHandScript : MonoBehaviour
 
     private void Update()
     {
-        if (!_Shooting)
+        if (!_Shooting && !_Grabbing)
             TargetStatus();
-
+        else if (_Grabbing)
+            _RangeStatus = 0;
         LineUpdate();
         ReticleUpdate();
         updateShootLine();
@@ -79,7 +80,7 @@ public class PhysHandScript : MonoBehaviour
 
     private void Grab()
     {
-        if (_ParentHand._Grab.GetStateDown(_ParentHand._handType))
+        if (_ParentHand._Grab.GetStateDown(_ParentHand._handType) && !_Shooting)
         {
             RaycastHit Grab;
             if (Physics.Raycast(transform.position, side * transform.right, out Grab, .1f, GrabMask))

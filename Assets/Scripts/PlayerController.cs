@@ -19,30 +19,21 @@ public class PlayerController : MonoBehaviour
     private float _distToGround;
     private float _distToCapsuleCenter;
     private float _distToSide;
-
     public float _MaxVelocity;
-
     private Vector3 _LastVelocity;
     private Vector3 _CurrentAcceleration;
     [SerializeField]
     private GameObject _FovCone;
     private Material _FovConeMat;
-
     public Rigidbody _PlayerRB;
-
     [SerializeField]
     private Transform _SteamVRRig;
-
     [SerializeField]
     private Transform TestViewHead;
     private Vector3 _lastHeadPos;
-
     private Vector3 _headVelocity;
-
     [SerializeField]
     private float _MoveDeadzone;
-
-
     [Header("VR Input")]
     [SerializeField]
     private SteamVR_Input_Sources _handType;
