@@ -14,6 +14,8 @@ public class PhysHandScript : MonoBehaviour
 
     private FixedJoint _GrabJoint; // the fixed joint used for grabbing stuff
 
+    private Rigidbody RB;
+
     [SerializeField]
     private Transform _ShootSpot;  // origin of the shooting
     [SerializeField]
@@ -40,24 +42,35 @@ public class PhysHandScript : MonoBehaviour
     private bool _TargetIsObject;        // if target is object
     private SpringJoint _ObjectShootJoint; // Shooting Joint
 
+    private bool _Grabbing; // Is player grabbing something/has it's fist closed
+    private bool _Shooting; // Is the player shooting
+    private int _GrabType; // Type of grab
+
+    private bool _HasPulled;
+    [SerializeField]
+    private float _MinPullForce;
+
     [SerializeField]
     private LineRenderer _ShootLine; // Shooting Line Renderer
-
-    private bool _shooting;
+    
 
     private void Start()
     {
         //_GrabJoint = GetComponent<FixedJoint>();
+        RB = GetComponent<Rigidbody>();
     }
 
     private void Update()
     {
-        if (_RangeStatus != 2)
+        if (!_Shooting)
             TargetStatus();
 
         LineUpdate();
         ReticleUpdate();
         updateShootLine();
+        HandAnimControl();
+
+        if (_Shooting) Pull();
 
         Shoot();
 
@@ -68,7 +81,6 @@ public class PhysHandScript : MonoBehaviour
     {
         if (_ParentHand._Grab.GetStateDown(_ParentHand._handType))
         {
-            Debug.Log(gameObject.name + "attrappe");
             RaycastHit Grab;
             if (Physics.Raycast(transform.position, side * transform.right, out Grab, .1f, GrabMask))
             {
@@ -77,13 +89,13 @@ public class PhysHandScript : MonoBehaviour
                     _GrabJoint = gameObject.AddComponent<FixedJoint>();
                 }
                 _GrabJoint.connectedBody = Grab.rigidbody;
-                _HandAnimator.SetInteger("GrabType", 1);
+                _GrabType = 1;
             }
             else
             {
-                _HandAnimator.SetInteger("GrabType", 0);
+                _GrabType = 0;
             }
-            _HandAnimator.SetBool("Grabbing", true);
+            _Grabbing = true;
 
 
             Debug.DrawRay(transform.position, side * transform.right, Color.red);
@@ -91,10 +103,10 @@ public class PhysHandScript : MonoBehaviour
 
         if (_ParentHand._Grab.GetStateUp(_ParentHand._handType))
         {
-            _HandAnimator.SetBool("Grabbing", false);
+            _Grabbing = false;
             Destroy(_GrabJoint);
         }
-    }
+    } // Grab Manager
 
     private void TargetStatus()
     {
@@ -123,7 +135,7 @@ public class PhysHandScript : MonoBehaviour
             _CurrentTarget = null;
         }
         _AimPos = _TargetInfo.point;
-    }
+    } // Targeting control
 
     private void LineUpdate()
     {
@@ -133,17 +145,24 @@ public class PhysHandScript : MonoBehaviour
             _AimLine.SetPosition(1, _AimLine.transform.position);
 
         _AimLine.SetPosition(0, _AimLine.transform.position);
-    }
+    } // Targeting line update
 
-    private void ReticleUpdate()
+    private void ReticleUpdate() // Reticle animations manager
     {
         _ReticleAnimator.SetInteger("RangeStatus", _RangeStatus);
         _ReticleAnimator.SetBool("isObject", _TargetIsObject);
     }
 
-    private void Shoot()
+    private void HandAnimControl()
     {
-        if (_ParentHand._Shoot.GetStateDown(_ParentHand._handType) && _RangeStatus == 1) // Shoot press
+        _HandAnimator.SetBool("Grabbing", _Grabbing);
+        _HandAnimator.SetInteger("GrabType", _GrabType);
+        _HandAnimator.SetBool("Shooting", _Shooting);
+    }
+
+    private void Shoot() // Shoot input & logic
+    {
+        if (_ParentHand._Shoot.GetStateDown(_ParentHand._handType) && _RangeStatus == 1 && !_Grabbing) // Shoot press
         {
             switch(_TargetIsObject)
             {
@@ -159,6 +178,7 @@ public class PhysHandScript : MonoBehaviour
                     _RangeStatus = 2;
                     break;
             }
+            _Shooting = true;
         }
 
         if (_ParentHand._Shoot.GetStateUp(_ParentHand._handType) && _RangeStatus == 2) // Shoot release
@@ -178,10 +198,12 @@ public class PhysHandScript : MonoBehaviour
                     _RangeStatus = 0;
                     break;
             }
+            _Shooting = false;
+            _HasPulled = false;
         }
     }
 
-    private void updateShootLine()
+    private void updateShootLine() // Update grapple Line renderer positions
     {
         if (_RangeStatus == 2)
         {
@@ -194,7 +216,7 @@ public class PhysHandScript : MonoBehaviour
                     break;
                 case false: //  Target is not object
                     _ShootLine.SetPosition(0, _ShootLine.transform.position);
-                    _ShootLine.SetPosition(1, _ShootLine.transform.position);
+                    _ShootLine.SetPosition(1, _ShootLine.transform.position); 
                     break;
             }
         }
@@ -212,8 +234,20 @@ public class PhysHandScript : MonoBehaviour
 
         Joint.connectedAnchor = _CurrentTarget.transform.InverseTransformPoint(_AimPos);
 
-        Joint.spring = 100f;
+        Joint.spring = 50f;
         Joint.maxDistance = Vector3.Distance(Joint.transform.position, _CurrentTarget.transform.position);
+    }
+
+    private void Pull()
+    {
+        if (RB.velocity.magnitude > _MinPullForce && !_HasPulled)
+        {
+            if (Vector3.Dot(RB.velocity.normalized, (_CurrentTarget.transform.position - transform.position).normalized) < -.7f)
+            {
+                _ObjectShootJoint.maxDistance *= .8f;
+                _HasPulled = true;
+            }
+        }
     }
 
 }
