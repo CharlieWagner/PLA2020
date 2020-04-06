@@ -38,7 +38,7 @@ public class PhysHandScript : MonoBehaviour
 
     private int _RangeStatus;            // Range Status, 0 no range, 1 in range, 2 shooting
     private bool _TargetIsObject;        // if target is object
-    private ConfigurableJoint _ObjectShootJoint; // Shooting Joint
+    private SpringJoint _ObjectShootJoint; // Shooting Joint
 
     [SerializeField]
     private LineRenderer _ShootLine; // Shooting Line Renderer
@@ -57,6 +57,7 @@ public class PhysHandScript : MonoBehaviour
 
         LineUpdate();
         ReticleUpdate();
+        updateShootLine();
 
         Shoot();
 
@@ -148,7 +149,7 @@ public class PhysHandScript : MonoBehaviour
             {
                 case true : //   Target is object
 
-                    _ObjectShootJoint = gameObject.AddComponent<ConfigurableJoint>();
+                    _ObjectShootJoint = gameObject.AddComponent<SpringJoint>();
                     _ObjectShootJoint.connectedBody = _CurrentTarget.GetComponent<Rigidbody>();
                     initObjectShootJoint(_ObjectShootJoint);
 
@@ -172,34 +173,47 @@ public class PhysHandScript : MonoBehaviour
                     _RangeStatus = 0;
                     break;
                 case false: //  Target is not object
+
+                    _CurrentTarget = null;
                     _RangeStatus = 0;
                     break;
             }
         }
     }
 
+    private void updateShootLine()
+    {
+        if (_RangeStatus == 2)
+        {
+            switch (_TargetIsObject)
+            {
+                case true: //   Target is object
 
-    private void initObjectShootJoint(ConfigurableJoint Joint) // -------------------------------------------- Object Shoot joint initialiser
+                    _ShootLine.SetPosition(0, _ShootLine.transform.position);
+                    _ShootLine.SetPosition(1, _ObjectShootJoint.connectedBody.transform.TransformPoint(_ObjectShootJoint.connectedAnchor));
+                    break;
+                case false: //  Target is not object
+                    _ShootLine.SetPosition(0, _ShootLine.transform.position);
+                    _ShootLine.SetPosition(1, _ShootLine.transform.position);
+                    break;
+            }
+        }
+        else
+        {
+            _ShootLine.SetPosition(0, _ShootLine.transform.position);
+            _ShootLine.SetPosition(1, _ShootLine.transform.position);
+        }
+    }
+
+    private void initObjectShootJoint(SpringJoint Joint) // -------------------------------------------- Object Shoot joint initialiser
     {
         Joint.autoConfigureConnectedAnchor = false;
-        Joint.connectedAnchor = Vector3.zero;
+        //Joint.connectedAnchor = _AimPos - _CurrentTarget.transform.position;
 
-        Joint.secondaryAxis = Vector3.zero;
-        Joint.axis = Vector3.zero;
-        /*
-        limits LLS = new JointDrive();
-        jd.positionSpring = 200f;
+        Joint.connectedAnchor = _CurrentTarget.transform.InverseTransformPoint(_AimPos);
 
-        Joint.linearLimitSpring = LLS;
-        */
-        JointDrive jd = new JointDrive();
-        jd.positionSpring = 50f;
-        jd.positionDamper = 1f;
-        jd.maximumForce = 50f;
-
-        Joint.xDrive = jd;
-        Joint.yDrive = jd;
-        Joint.zDrive = jd;
+        Joint.spring = 100f;
+        Joint.maxDistance = Vector3.Distance(Joint.transform.position, _CurrentTarget.transform.position);
     }
 
 }
