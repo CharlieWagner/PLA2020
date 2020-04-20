@@ -53,6 +53,11 @@ public class PlayerController : MonoBehaviour
     private Transform _HeadPosition;
 
 
+
+    private float _JumpCD;
+    private float _SnapCD;
+
+
     [Header("Debug UI")]
 
     [SerializeField]
@@ -69,18 +74,27 @@ public class PlayerController : MonoBehaviour
     private void FixedUpdate()
     {
         VRRigRecenter();
-
+        //Debug.Log(isGrounded());
         UpdateStickUI();
+        
+
+        
+
 
         if (isGrounded())
         {
             AccelerateTowards(BaseVelocityTarget(_GroundSpeed) + _headVelocity);
 
             
-            if (_Jump.stateDown)
+            if (_Jump.stateDown/*_Input_JumpDown*/ && _JumpCD >= 0)
             {
                 _PlayerRB.AddForce(new Vector3(0, _JumpAcceleration, 0));
+                Debug.Log("Jump");
+                _JumpCD = -.05f;
             }
+
+            _JumpCD += Time.deltaTime;
+
         }
         else
         {
@@ -125,18 +139,22 @@ public class PlayerController : MonoBehaviour
     private bool isGrounded()
     {
         RaycastHit Hit;
-        return Physics.SphereCast(transform.position /*- new Vector3(0,_distToCapsuleCenter,0)*/, _distToSide, -Vector3.up, out Hit, _distToGround + 0.01f);
+        return Physics.SphereCast(transform.position /*- new Vector3(0,_distToCapsuleCenter,0)*/, _distToSide - .05f, -Vector3.up, out Hit, _distToGround - _distToSide);
     }
 
     private void SnapTurn(float Angle)
     {
-        if (_SnapTurnLeft.stateDown)
+        if (_SnapTurnLeft.stateDown && _SnapCD >= 0)
         {
             transform.Rotate(new Vector3(0,-Angle,0));
-        } else if (_SnapTurnRight.stateDown)
+            _SnapCD = -.05f;
+        } else if (_SnapTurnRight.stateDown && _SnapCD >= 0)
         {
             transform.Rotate(new Vector3(0, Angle, 0));
+            _SnapCD = -.05f;
         }
+
+        _SnapCD += Time.deltaTime;
     }
 
     private void VRRigRecenter()
@@ -177,4 +195,6 @@ public class PlayerController : MonoBehaviour
     {
         _Stick.transform.localPosition = new Vector3(_Move.axis.x * 30, _Move.axis.y * 30, -.5f);
     }
+    
+
 }

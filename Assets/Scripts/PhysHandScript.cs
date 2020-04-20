@@ -4,7 +4,10 @@ using UnityEngine;
 
 public class PhysHandScript : MonoBehaviour
 {
-    
+
+    [SerializeField]
+    private Rigidbody _PlayerRB;
+
     [SerializeField]
     private HandScript _ParentHand;// Controller
     [SerializeField]
@@ -42,6 +45,13 @@ public class PhysHandScript : MonoBehaviour
     private bool _TargetIsObject;        // if target is object
     private SpringJoint _ObjectShootJoint; // Shooting Joint
 
+    [SerializeField]
+    private GameObject _GrapplePointPrefab;
+    private SpringJoint _GrappleSpring;
+
+    [SerializeField]
+    private float _ObjectSpringStrength;
+
     private bool _Grabbing; // Is player grabbing something/has it's fist closed
     private bool _Shooting; // Is the player shooting
     private int _GrabType; // Type of grab
@@ -66,12 +76,12 @@ public class PhysHandScript : MonoBehaviour
             TargetStatus();
         else if (_Grabbing)
             _RangeStatus = 0;
+
         LineUpdate();
         ReticleUpdate();
         updateShootLine();
         HandAnimControl();
-
-        if (_Shooting) Pull();
+        
 
         Shoot();
 
@@ -83,7 +93,11 @@ public class PhysHandScript : MonoBehaviour
         if (_ParentHand._Grab.GetStateDown(_ParentHand._handType) && !_Shooting)
         {
             RaycastHit Grab;
-            if (Physics.Raycast(transform.position, side * transform.right, out Grab, .1f, GrabMask))
+
+            //if (Physics.SphereCast(transform.position, .1f, side * transform.right, out Grab, .02f, GrabMask))
+
+            //if (Physics.Raycast(transform.position, side * transform.right, out Grab, .1f, GrabMask))
+            if (Physics.SphereCast(transform.position - (side * transform.right)*.05f, .05f, side * transform.right, out Grab, .05f, GrabMask))
             {
                 if (_GrabJoint == null)
                 {
@@ -113,7 +127,17 @@ public class PhysHandScript : MonoBehaviour
     {
         RaycastHit _TargetInfo;
         //if (Physics.Raycast(_ShootSpot.position, _ShootSpot.forward, out _TargetInfo, _Range, _DynamicObjectLayerMask))
-        if (Physics.SphereCast(_ShootSpot.position, _ObjectAimSpread, _ShootSpot.forward, out _TargetInfo, _Range, _DynamicObjectLayerMask))
+        if (Physics.Raycast(_ShootSpot.position, _ShootSpot.forward, out _TargetInfo, 1, _DynamicObjectLayerMask)
+            && !Physics.Raycast(_ShootSpot.position, _TargetInfo.point - _ShootSpot.position, Vector3.Distance(_ShootSpot.position, _TargetInfo.point), _NotDynamicObject))
+        {
+            _RangeStatus = 1;
+            _TargetIsObject = true;
+
+            _CurrentTarget = _TargetInfo.collider.gameObject;
+
+        }
+        else if (Physics.SphereCast(_ShootSpot.position + (_ShootSpot.forward * .5f), _ObjectAimSpread, _ShootSpot.forward, out _TargetInfo, _Range, _DynamicObjectLayerMask)
+            && !Physics.Raycast(_ShootSpot.position, _TargetInfo.point - _ShootSpot.position, Vector3.Distance(_ShootSpot.position, _TargetInfo.point), _NotDynamicObject))
         {
             _RangeStatus = 1;
             _TargetIsObject = true;
@@ -122,6 +146,13 @@ public class PhysHandScript : MonoBehaviour
 
         }
         else if (Physics.Raycast(_ShootSpot.position, _ShootSpot.forward, out _TargetInfo, _Range, _NotDynamicObject))
+        {
+            _RangeStatus = 1;
+            _TargetIsObject = false;
+
+            _CurrentTarget = null;
+        }
+        else if (Physics.SphereCast(_ShootSpot.position + (_ShootSpot.forward * .5f), _ObjectAimSpread, _ShootSpot.forward, out _TargetInfo, _Range, _NotDynamicObject))
         {
             _RangeStatus = 1;
             _TargetIsObject = false;
@@ -176,6 +207,12 @@ public class PhysHandScript : MonoBehaviour
                     _RangeStatus = 2;
                     break;
                 case false : //  Target is not object
+                    _CurrentTarget = Instantiate(_GrapplePointPrefab, _AimPos, Quaternion.identity);
+                    _GrappleSpring = _CurrentTarget.GetComponent<SpringJoint>();
+                    initPlayerShootJoint();
+
+
+
                     _RangeStatus = 2;
                     break;
             }
@@ -195,12 +232,29 @@ public class PhysHandScript : MonoBehaviour
                     break;
                 case false: //  Target is not object
 
+                    Destroy(_CurrentTarget);
+
                     _CurrentTarget = null;
                     _RangeStatus = 0;
                     break;
             }
             _Shooting = false;
             _HasPulled = false;
+        }
+
+
+        if (_Shooting) // ---------------------------------- IF THE PLAYER IS SHOOTING
+        {
+            switch (_TargetIsObject)
+            {
+                case true: //   Target is object
+                    Pull();
+                    break;
+                case false: //  Target is not object
+                    Pull();
+                    updatePlayerShootJoint();
+                    break;
+            }
         }
     }
 
@@ -217,7 +271,7 @@ public class PhysHandScript : MonoBehaviour
                     break;
                 case false: //  Target is not object
                     _ShootLine.SetPosition(0, _ShootLine.transform.position);
-                    _ShootLine.SetPosition(1, _ShootLine.transform.position); 
+                    _ShootLine.SetPosition(1, _GrappleSpring.transform.position); 
                     break;
             }
         }
@@ -235,8 +289,20 @@ public class PhysHandScript : MonoBehaviour
 
         Joint.connectedAnchor = _CurrentTarget.transform.InverseTransformPoint(_AimPos);
 
-        Joint.spring = 50f;
+        Joint.spring = _ObjectSpringStrength;
         Joint.maxDistance = Vector3.Distance(Joint.transform.position, _CurrentTarget.transform.position);
+    }
+
+    private void initPlayerShootJoint()
+    {
+        _GrappleSpring.connectedBody = _PlayerRB;
+        _GrappleSpring.connectedAnchor = Vector3.zero;
+        _GrappleSpring.maxDistance = Vector3.Distance(_GrappleSpring.transform.position, /*_PlayerRB.*/transform.position);
+    }
+
+    private void updatePlayerShootJoint()
+    {
+        _GrappleSpring.connectedAnchor = Vector3.zero + _PlayerRB.transform.TransformPoint(transform.localPosition) - _PlayerRB.transform.position;
     }
 
     private void Pull()
@@ -245,7 +311,9 @@ public class PhysHandScript : MonoBehaviour
         {
             if (Vector3.Dot(RB.velocity.normalized, (_CurrentTarget.transform.position - transform.position).normalized) < -.7f)
             {
-                _ObjectShootJoint.maxDistance *= .8f;
+                _ObjectShootJoint.maxDistance = _ObjectShootJoint.maxDistance - 1;
+                _ObjectShootJoint.connectedBody.velocity += Vector3.up;
+
                 _HasPulled = true;
             }
         }
