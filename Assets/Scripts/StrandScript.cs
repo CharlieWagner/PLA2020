@@ -130,12 +130,14 @@ public class StrandScript : MonoBehaviour
     private void updateJointAnchor()
     {
         Vector3 AnchorOffset;
-        AnchorOffset = _PlayerRB.transform.InverseTransformPoint(_shootingHand.transform.position);
-
-        
+        //AnchorOffset = _PlayerRB.transform.InverseTransformPoint(_shootingHand.transform.position);
+        AnchorOffset = _shootingHand.transform.position - _PlayerRB.transform.position;
+        /*
         Debug.DrawLine(_shootingHand.transform.position + transform.up*.05f, _PlayerRB.transform.position + transform.up * .05f, Color.green);
         Debug.DrawLine(_PlayerRB.transform.position + AnchorOffset, _PlayerRB.transform.position, Color.red);
-        _confJoint.connectedAnchor = AnchorOffset;
+        */
+
+        _strandSpring.anchor = AnchorOffset;
     }
 
     public void BreakStrand()
