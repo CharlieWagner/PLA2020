@@ -43,26 +43,35 @@ public class PhysHandScript : MonoBehaviour
 
     private int _RangeStatus;            // Range Status, 0 no range, 1 in range, 2 shooting
     private bool _TargetIsObject;        // if target is object
-    private SpringJoint _ObjectShootJoint; // Shooting Joint
 
+    /*
+    private SpringJoint _ObjectShootJoint; // Shooting Joint
+    */
+    /*
     [SerializeField]
     private GameObject _GrapplePointPrefab;
     private SpringJoint _GrappleSpring;
 
     [SerializeField]
     private float _ObjectSpringStrength;
+    */
 
     private bool _Grabbing; // Is player grabbing something/has it's fist closed
     private bool _Shooting; // Is the player shooting
     private int _GrabType; // Type of grab
 
+    private StrandScript _currentStrand;
+    [SerializeField]
+    private GameObject _StrandPrefab;
+
+    /*
     private bool _HasPulled;
     [SerializeField]
     private float _MinPullForce;
 
     [SerializeField]
     private LineRenderer _ShootLine; // Shooting Line Renderer
-    
+    */
 
     private void Start()
     {
@@ -79,7 +88,7 @@ public class PhysHandScript : MonoBehaviour
 
         LineUpdate();
         ReticleUpdate();
-        updateShootLine();
+        //updateShootLine();
         HandAnimControl();
         
 
@@ -150,14 +159,14 @@ public class PhysHandScript : MonoBehaviour
             _RangeStatus = 1;
             _TargetIsObject = false;
 
-            _CurrentTarget = null;
+            _CurrentTarget = _TargetInfo.collider.gameObject;
         }
         else if (Physics.SphereCast(_ShootSpot.position + (_ShootSpot.forward * .5f), _ObjectAimSpread, _ShootSpot.forward, out _TargetInfo, _Range, _NotDynamicObject))
         {
             _RangeStatus = 1;
             _TargetIsObject = false;
 
-            _CurrentTarget = null;
+            _CurrentTarget = _TargetInfo.collider.gameObject;
         }
         else
         {
@@ -196,55 +205,28 @@ public class PhysHandScript : MonoBehaviour
     {
         if (_ParentHand._Shoot.GetStateDown(_ParentHand._handType) && _RangeStatus == 1 && !_Grabbing) // Shoot press
         {
-            switch(_TargetIsObject)
-            {
-                case true : //   Target is object
-
-                    _ObjectShootJoint = gameObject.AddComponent<SpringJoint>();
-                    _ObjectShootJoint.connectedBody = _CurrentTarget.GetComponent<Rigidbody>();
-                    initObjectShootJoint(_ObjectShootJoint);
-
-                    _RangeStatus = 2;
-                    break;
-                case false : //  Target is not object
-                    _CurrentTarget = Instantiate(_GrapplePointPrefab, _AimPos, Quaternion.identity);
-                    _GrappleSpring = _CurrentTarget.GetComponent<SpringJoint>();
-                    initPlayerShootJoint();
-
-
-
-                    _RangeStatus = 2;
-                    break;
-            }
+            
+            GameObject _strand = Instantiate(_StrandPrefab, transform.position, Quaternion.identity);
+            _currentStrand = _strand.GetComponent<StrandScript>();
+            _currentStrand.initializeStrand(_CurrentTarget, _AimPos, RB, _PlayerRB, _TargetIsObject);
+            _RangeStatus = 2;
             _Shooting = true;
         }
 
         if (_ParentHand._Shoot.GetStateUp(_ParentHand._handType) && _RangeStatus == 2) // Shoot release
         {
-            switch (_TargetIsObject)
-            {
-                case true: //   Target is object
-                    
-                    Destroy(_ObjectShootJoint);
-                    _CurrentTarget = null;
+            _currentStrand.BreakStrand();
 
-                    _RangeStatus = 0;
-                    break;
-                case false: //  Target is not object
-
-                    Destroy(_CurrentTarget);
-
-                    _CurrentTarget = null;
-                    _RangeStatus = 0;
-                    break;
-            }
             _Shooting = false;
-            _HasPulled = false;
+            //HasPulled = false;
         }
 
 
         if (_Shooting) // ---------------------------------- IF THE PLAYER IS SHOOTING
         {
+
+            
+            /*
             switch (_TargetIsObject)
             {
                 case true: //   Target is object
@@ -255,33 +237,13 @@ public class PhysHandScript : MonoBehaviour
                     updatePlayerShootJoint();
                     break;
             }
+            */
         }
     }
-
-    private void updateShootLine() // Update grapple Line renderer positions
-    {
-        if (_RangeStatus == 2)
-        {
-            switch (_TargetIsObject)
-            {
-                case true: //   Target is object
-
-                    _ShootLine.SetPosition(0, _ShootLine.transform.position);
-                    _ShootLine.SetPosition(1, _ObjectShootJoint.connectedBody.transform.TransformPoint(_ObjectShootJoint.connectedAnchor));
-                    break;
-                case false: //  Target is not object
-                    _ShootLine.SetPosition(0, _ShootLine.transform.position);
-                    _ShootLine.SetPosition(1, _GrappleSpring.transform.position); 
-                    break;
-            }
-        }
-        else
-        {
-            _ShootLine.SetPosition(0, _ShootLine.transform.position);
-            _ShootLine.SetPosition(1, _ShootLine.transform.position);
-        }
-    }
-
+    
+    
+    
+    /*
     private void initObjectShootJoint(SpringJoint Joint) // -------------------------------------------- Object Shoot joint initialiser
     {
         Joint.autoConfigureConnectedAnchor = false;
@@ -297,9 +259,9 @@ public class PhysHandScript : MonoBehaviour
     {
         _GrappleSpring.connectedBody = _PlayerRB;
         _GrappleSpring.connectedAnchor = Vector3.zero;
-        _GrappleSpring.maxDistance = Vector3.Distance(_GrappleSpring.transform.position, /*_PlayerRB.*/transform.position);
+        _GrappleSpring.maxDistance = Vector3.Distance(_GrappleSpring.transform.position, transform.position);
     }
-
+/*
     private void updatePlayerShootJoint()
     {
         _GrappleSpring.connectedAnchor = Vector3.zero + _PlayerRB.transform.TransformPoint(transform.localPosition) - _PlayerRB.transform.position;
@@ -317,6 +279,6 @@ public class PhysHandScript : MonoBehaviour
                 _HasPulled = true;
             }
         }
-    }
+    }*/
 
 }
