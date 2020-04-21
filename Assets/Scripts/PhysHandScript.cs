@@ -209,6 +209,9 @@ public class PhysHandScript : MonoBehaviour
             GameObject _strand = Instantiate(_StrandPrefab, transform.position, Quaternion.identity);
             _currentStrand = _strand.GetComponent<StrandScript>();
             _currentStrand.initializeStrand(_CurrentTarget, _AimPos, RB, _PlayerRB, _TargetIsObject);
+
+            
+
             _RangeStatus = 2;
             _Shooting = true;
         }
