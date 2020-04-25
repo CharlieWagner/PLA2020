@@ -62,6 +62,8 @@ public class PhysHandScript : MonoBehaviour
 
     [SerializeField]
     private LineRenderer _ShootLine; // Shooting Line Renderer
+    [SerializeField]
+    private Transform _VRRig;
     
 
     private void Start()
@@ -296,12 +298,19 @@ public class PhysHandScript : MonoBehaviour
     private void initPlayerShootJoint()
     {
         _GrappleSpring.connectedBody = _PlayerRB;
-        _GrappleSpring.connectedAnchor = Vector3.zero;
+        Vector3 AnchorOffset = Vector3.zero;
+        //Debug.Break();
+        //Vector3 AnchorOffset = _PlayerRB.transform.InverseTransformPoint(transform.localPosition);
+        _GrappleSpring.connectedAnchor = AnchorOffset;
         _GrappleSpring.maxDistance = Vector3.Distance(_GrappleSpring.transform.position, /*_PlayerRB.*/transform.position);
     }
 
     private void updatePlayerShootJoint()
     {
+        Vector3 AnchorOffset = Vector3.zero;
+        //Vector3 AnchorOffset = _PlayerRB.transform.InverseTransformPoint(transform.localPosition);
+        Debug.DrawLine(_PlayerRB.transform.position, _PlayerRB.transform.position + AnchorOffset);
+        _GrappleSpring.connectedAnchor = AnchorOffset;
         _GrappleSpring.connectedAnchor = Vector3.zero + _PlayerRB.transform.TransformPoint(transform.localPosition) - _PlayerRB.transform.position;
     }
 

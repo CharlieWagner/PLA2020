@@ -13,17 +13,23 @@ public class BatteryPort : MonoBehaviour
     private BatteryPowered _Powering;
 
 
+    private AudioSource _AudioSource;
+
+    private void Start()
+    {
+        _AudioSource = GetComponent<AudioSource>();
+    }
+
     private void OnCollisionEnter(Collision collision)
     {
-        Debug.Log("collide");
         if (_CurrentBattery == null)
         {
-            Debug.Log("can be plugged");
             if (collision.gameObject.TryGetComponent(out _CurrentBattery))
             {
-                Debug.Log("plugging");
                 _CurrentBattery.Plug(transform, _BatteryPosition);
                 _Powering._Energy += 1;
+
+                _AudioSource.Play();
             }
         }
     }
