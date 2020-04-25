@@ -38,7 +38,7 @@ public class TestEnnemyScript : MonoBehaviour
 
     private void Update()
     {
-        if (Vector3.Distance(transform.position, _Player.transform.position) <= 5 && !_activated)
+        if (Vector3.Distance(transform.position, _Player.transform.position) <= 5 && !_activated && _HP >= 1)
         {
             _Animator.SetTrigger("Startup");
             _AudioSource.Play();
@@ -98,13 +98,14 @@ public class TestEnnemyScript : MonoBehaviour
     public void Damage(Vector3 position)
     {
         _HP--;
-        _RB.AddForceAtPosition(Vector3.up * 10, position);
+        _RB.velocity = Vector3.up*2;
     }
 
     private void Kill()
     {
         Destroy(_Drive);
         _AudioSource.loop = false;
+        _activated = false;
         _HP = -5;
     }
 }

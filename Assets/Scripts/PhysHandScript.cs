@@ -318,7 +318,7 @@ public class PhysHandScript : MonoBehaviour
     {
         if (RB.velocity.magnitude > _MinPullForce && !_HasPulled)
         {
-            if (Vector3.Dot(RB.velocity.normalized, (_CurrentTarget.transform.position - transform.position).normalized) < -.7f)
+            if (Vector3.Dot(RB.velocity.normalized, (_CurrentTarget.transform.position - transform.position).normalized) < -.7f && _ObjectShootJoint != null)
             {
                 _ObjectShootJoint.maxDistance = _ObjectShootJoint.maxDistance - 1;
                 _ObjectShootJoint.connectedBody.velocity += Vector3.up;
